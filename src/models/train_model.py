@@ -114,8 +114,8 @@ if __name__ == '__main__':
 
 	callback = EarlyStopping(
 		monitor='val_loss',
-		min_delta=0.001,
-		patience=3,
+		min_delta=1e-7,
+		patience=10,
 		verbose=0,
 		mode='auto',
 		baseline=None,

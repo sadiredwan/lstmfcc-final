@@ -8,6 +8,7 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import load_model
 from tensorflow.keras.models import clone_model
+from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 
 
@@ -23,25 +24,39 @@ def reset_weights(model):
 			var.assign(initializer(var.shape, var.dtype))
 
 
+"""
+Retrain model with or without pretrained weights
+Args:
+	model_name (acoustic_mfcc, acoustic_wpd1 etc.)
+	training_mode ('transfer', 'new')
+	data_set ('acoustic', 'throat', 'combined')
+	decomposition_strategy ('raw', 'wpd', 'cwt')
+	decomposition_level (1, 2, 3, 4)
+Example:
+	To train acoustic_wpd1 (keeping previous weights) with level 1 WPD coefficients of throat data
+	python retrain_model.py transfer acoustic_wpd1 throat wpd 1
+	To train acoustic_wpd1 (newly initialized weights) with level 1 WPD coefficients of combined data
+	python retrain_model.py new acoustic_wpd1 combined wpd 1
+"""
 if __name__ == '__main__':
 	os.chdir('../../')
-	MODEL = sys.argv[1]
-	DATASET = sys.argv[2]
-	STRAT = sys.argv[3]
+	MODE = sys.argv[1]
+	MODEL = sys.argv[2]
+	DATASET = sys.argv[3]
+	STRAT = sys.argv[4]
 	
 	pretrained_model = load_model('models/'+MODEL+'_model.h5', compile=True)
-	pretrained_model.trainable = True
 	
 	if DATASET != 'combined':
 		if STRAT != 'raw':
-			LEVEL = sys.argv[4]
+			LEVEL = sys.argv[5]
 			X = pickle.load(open('data/processed/'+DATASET+'/train/X_'+STRAT+'_level'+LEVEL+'.pickle', 'rb'))
 		else:
 			X = pickle.load(open('data/processed/'+DATASET+'/train/X_raw.pickle', 'rb'))
 		y = pickle.load(open('data/processed/'+DATASET+'/train/y_train.pickle', 'rb'))
 	else:
 		if STRAT != 'raw':
-			LEVEL = sys.argv[4]
+			LEVEL = sys.argv[5]
 			X = np.vstack((pickle.load(open('data/processed/acoustic/train/X_'+STRAT+'_level'+LEVEL+'.pickle', 'rb')),
 				pickle.load(open('data/processed/throat/train/X_'+STRAT+'_level'+LEVEL+'.pickle', 'rb'))))
 		else:
@@ -52,17 +67,23 @@ if __name__ == '__main__':
 
 	X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.1, random_state=2)
 
-	model = clone_model(pretrained_model)
+	if MODE != 'transfer':
+		model = clone_model(pretrained_model)
+	else:
+		pretrained_model.trainable = True
+		model = pretrained_model
 
 	model.compile(
 	loss='categorical_crossentropy',
 	optimizer='adam',
 	metrics=['acc'])
 
+	min_delta = (1e-7, 1e-3)[DATASET == 'throat']
+	patience = (7, 3)[DATASET == 'throat']
 	callback = EarlyStopping(
 		monitor='val_loss',
-		min_delta=0.001,
-		patience=3,
+		min_delta=min_delta,
+		patience=patience,
 		verbose=0,
 		mode='auto',
 		baseline=None,
@@ -78,8 +99,8 @@ if __name__ == '__main__':
 	validation_data=(X_val, y_val))
 
 	if STRAT != 'raw':
-		pickle.dump(hist.history, open('models/histories/'+DATASET+'_'+STRAT+LEVEL+'_retrained.pickle', 'wb'))
-		model.save('models/'+DATASET+'_'+STRAT+LEVEL+'_retrained_model.h5')
+		pickle.dump(hist.history, open('models/histories/'+DATASET+'_'+STRAT+LEVEL+'_'+MODE+'.pickle', 'wb'))
+		model.save('models/'+DATASET+'_'+STRAT+LEVEL+'_'+MODE+'_model.h5')
 	else:
-		pickle.dump(hist.history, open('models/histories/'+DATASET+'_mfcc_retrained.pickle', 'wb'))
-		model.save('models/retrained/'+DATASET+'_mfcc_retrained_model.h5')
+		pickle.dump(hist.history, open('models/histories/'+DATASET+'_mfcc_'+MODE+'.pickle', 'wb'))
+		model.save('models/retrained/'+DATASET+'_mfcc_'+MODE+'_model.h5')

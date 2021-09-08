@@ -1,5 +1,6 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+import sys
 import pickle
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
@@ -7,12 +8,19 @@ from sklearn.metrics import roc_curve, auc, precision_score
 import tensorflow as tf
 import seaborn
 
-if __name__ == '__main__':
 
+"""
+Example:
+	python roc.py acoustic_wpd1 throat X_wpd_level1
+"""
+if __name__ == '__main__':
 	os.chdir('../../')
-	model = load_model('models/throat_wpd1_model.h5', compile=True)
-	X_test = pickle.load(open('data/processed/throat/test/X_wpd_level1.pickle', 'rb'))
-	y_test = pickle.load(open('data/processed/throat/test/y_test.pickle', 'rb'))
+	MODEL = sys.argv[1]
+	DATASET = sys.argv[2]
+	FNAME = sys.argv[3]
+	model = load_model('models/'+MODEL+'_model.h5', compile=True)
+	X_test = pickle.load(open('data/processed/'+DATASET+'/test/'+FNAME+'.pickle', 'rb'))
+	y_test = pickle.load(open('data/processed/'+DATASET+'/test/y_test.pickle', 'rb'))
 	y_pred = model.predict(X_test)
 	ps_y_pred = [y.argmax() for y in y_pred]
 	ps_y_test = [y.argmax() for y in y_test]
@@ -48,7 +56,7 @@ if __name__ == '__main__':
 	seaborn.heatmap(matrix, annot=True, ax=ax)
 	ax.set_xlabel('Predicted labels')
 	ax.set_ylabel('True labels')
-	ax.set_title('Confusion Matrix '+ str(ps))
+	ax.set_title('Precision Score '+ str(ps))
 	ax.xaxis.set_ticklabels(labels, rotation=45)
 	ax.yaxis.set_ticklabels(labels, rotation=45)
 	plt.show()
