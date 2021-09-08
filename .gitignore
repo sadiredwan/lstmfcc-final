@@ -1,3 +1,9 @@
-data/
+data/external/WavAugment/**/
+data/interim
+data/processed
+data/raw/acoustic/test/**/
+data/raw/acoustic/train/**/
+data/raw/throat
 models/histories
 models/logs
+

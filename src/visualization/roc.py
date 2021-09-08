@@ -10,9 +10,9 @@ import seaborn
 if __name__ == '__main__':
 
 	os.chdir('../../')
-	model = load_model('models/wpd_mfcc_model.h5', compile=True)
-	X_test = pickle.load(open('data/processed/acoustic/test/X_wpd_level1.pickle', 'rb'))
-	y_test = pickle.load(open('data/processed/acoustic/test/y_test.pickle', 'rb'))
+	model = load_model('models/throat_wpd1_model.h5', compile=True)
+	X_test = pickle.load(open('data/processed/throat/test/X_wpd_level1.pickle', 'rb'))
+	y_test = pickle.load(open('data/processed/throat/test/y_test.pickle', 'rb'))
 	y_pred = model.predict(X_test)
 	ps_y_pred = [y.argmax() for y in y_pred]
 	ps_y_test = [y.argmax() for y in y_test]
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 	seaborn.heatmap(matrix, annot=True, ax=ax)
 	ax.set_xlabel('Predicted labels')
 	ax.set_ylabel('True labels')
-	ax.set_title('Confusion Matrix')
+	ax.set_title('Confusion Matrix '+ str(ps))
 	ax.xaxis.set_ticklabels(labels, rotation=45)
 	ax.yaxis.set_ticklabels(labels, rotation=45)
 	plt.show()

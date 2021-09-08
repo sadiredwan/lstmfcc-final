@@ -1,9 +1,11 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+import sys
 import time
 import pickle
 from tensorflow.keras import Sequential
 from kerastuner.tuners import RandomSearch
+from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 from kerastuner.engine.hyperparameters import HyperParameters
 from tensorflow.keras.layers import LSTM, TimeDistributed, Dense, Flatten
@@ -62,10 +64,29 @@ class RNN:
 		return model
 
 
+"""
+Run trial and train model
+Args:
+	data_set ('acoustic', 'throat', 'combined')
+	decomposition_strategy ('raw', 'wpd', 'cwt')
+	decomposition_level (1, 2, 3, 4)
+Example:
+	To train model with level 2 WPD coefficients of acoustic data
+	python train_model.py acoustic wpd 2
+"""
 if __name__ == '__main__':
 	os.chdir('../../')
-	X = pickle.load(open('data/processed/acoustic/train/X_wpd_level1.pickle', 'rb'))
-	y = pickle.load(open('data/processed/acoustic/train/y_train.pickle', 'rb'))
+	DATASET = sys.argv[1]
+	STRAT = sys.argv[2]
+
+	if STRAT != 'raw':
+		LEVEL = sys.argv[3]
+		X = pickle.load(open('data/processed/'+DATASET+'/train/X_'+STRAT+'_level'+LEVEL+'.pickle', 'rb'))
+	else:
+		X = pickle.load(open('data/processed/'+DATASET+'/train/X_raw.pickle', 'rb'))
+	y = pickle.load(open('data/processed/'+DATASET+'/train/y_train.pickle', 'rb'))
+
+	
 	X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.1, random_state=2)
 	n_classes = len(y_train[0])
 
@@ -91,13 +112,27 @@ if __name__ == '__main__':
 		output_shape=n_classes,
 		hyperparams=tuner.get_best_hyperparameters()[0].values).run()
 
+	callback = EarlyStopping(
+		monitor='val_loss',
+		min_delta=0.001,
+		patience=3,
+		verbose=0,
+		mode='auto',
+		baseline=None,
+		restore_best_weights=False)
+
 	hist = model.fit(
 		X_train,
 		y_train,
 		epochs=100,
 		batch_size=50,
 		shuffle='true',
+		callbacks=[callback],
 		validation_data=(X_val, y_val))
 
-	pickle.dump(hist.history, open('models/histories/wpd_mfcc.pickle', 'wb'))
-	model.save('models/wpd_mfcc_model.h5')
+	if STRAT != 'raw':
+		pickle.dump(hist.history, open('models/histories/'+DATASET+'_'+STRAT+LEVEL+'.pickle', 'wb'))
+		model.save('models/'+DATASET+'_'+STRAT+LEVEL+'_model.h5')
+	else:
+		pickle.dump(hist.history, open('models/histories/'+DATASET+'_mfcc.pickle', 'wb'))
+		model.save('models/'+DATASET+'_mfcc_model.h5')

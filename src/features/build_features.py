@@ -179,32 +179,35 @@ class Config:
 """
 Builds MFCC feature dataset from acoustic wav signals dataset
 Args:
-	decomposition_strategy, decomposition_level
-	decomposition_strategy must be one of these 'raw', 'wpd', 'cwt'
-	decomposition_level must be 1-4
+	data_set ('acoustic', 'throat')
+	split ('train', 'test')
+	decomposition_strategy ('raw', 'wpd', 'cwt')
+	decomposition_level (1, 2, 3, 4)
 Example:
-	To build MFCC feature vectors from level 2 WPD coefficients
-	python build_features.py wpd 2
+	To build MFCC feature vectors from level 2 WPD coefficients of acoustic training data
+	python build_features.py acoustic train wpd 2
 """
 if __name__ == '__main__':
 	os.chdir('../../')
-	train_data_path = os.getcwd() + '/data/raw/acoustic/train/'
-	test_data_path = os.getcwd() + '/data/raw/acoustic/test/'
+	DATASET = sys.argv[1]
+	SPLIT = sys.argv[2]
+	PATH = os.getcwd() + '/data/raw/'+DATASET+'/'+SPLIT+'/'
 
 	config = Config(22050, 0.02, 0.01, 13, 26, 512)
 
-	labels, filenames = grab_files(train_data_path)
-	X_raw, X_wpd, X_cwt, y_train = [], [], [], []
+	labels, filenames = grab_files(PATH)
+	X_raw, X_wpd, X_cwt, y = [], [], [], []
 
-	STRAT = sys.argv[1]
+	STRAT = sys.argv[3]
 	if STRAT != 'raw':
-		LEVEL = int(sys.argv[2])
+		LEVEL = int(sys.argv[4])
 
+	n = (200//6, 2300//6)[DATASET == 'acoustic']
 	for label, fname in tqdm(zip(labels, filenames)):
-		signal, rate = librosa.load(os.path.join(train_data_path, label, fname))
+		signal, rate = librosa.load(os.path.join(PATH, label, fname))
 		signal = __pad__(signal, config.samplerate)
 		if len(signal) > config.samplerate:
-			samples = resample(signal, config.samplerate, n=2300//6)
+			samples = resample(signal, config.samplerate, n)
 		else:
 			samples = [signal]
 
@@ -220,25 +223,24 @@ if __name__ == '__main__':
 			elif STRAT == 'cwt':
 				cwt_coefs = cwt(sample, config)
 				X_cwt.append(__mfcc__(cwt_coefs[LEVEL-1], config))
+			y.append(label)
 
-			y_train.append(label)
-			
 	if STRAT == 'raw':
 		X_raw = np.array(X_raw)
-		pickle.dump(X_raw, open('data/processed/acoustic/train/X_raw.pickle', 'wb'), protocol=4)
+		pickle.dump(X_raw, open('data/processed/'+DATASET+'/'+SPLIT+'/X_raw.pickle', 'wb'), protocol=4)
 	elif STRAT == 'wpd':
 		X_wpd = np.array(X_wpd)
 		X_wpd = np.reshape(X_wpd, (X_wpd.shape[0], X_wpd.shape[2], -1))
-		pickle.dump(X_wpd, open('data/processed/acoustic/train/X_wpd_level'+sys.argv[2]+'.pickle', 'wb'), protocol=4)
+		pickle.dump(X_wpd, open('data/processed/'+DATASET+'/'+SPLIT+'/X_wpd_level'+str(LEVEL)+'.pickle', 'wb'), protocol=4)
 	elif STRAT == 'cwt':
 		X_cwt = np.array(X_cwt)
-		pickle.dump(X_cwt, open('data/processed/acoustic/train/X_cwt_level'+sys.argv[2]+'.pickle', 'wb'), protocol=4)
+		pickle.dump(X_cwt, open('data/processed/'+DATASET+'/'+SPLIT+'/X_cwt_level'+str(LEVEL)+'.pickle', 'wb'), protocol=4)
 
-	y_train = label_transform(y_train)
-	label_index = y_train.columns.values
-	y_train = y_train.values
-	y_train = np.array(y_train)
-	pickle.dump(y_train, open('data/processed/acoustic/train/y_train.pickle', 'wb'), protocol=4)
+	y = label_transform(y)
+	label_index = y.columns.values
+	y = y.values
+	y = np.array(y)
+	pickle.dump(y, open('data/processed/'+DATASET+'/'+SPLIT+'/y_'+SPLIT+'.pickle', 'wb'), protocol=4)
 
 	del labels, filenames, X_raw, X_wpd, X_cwt
 	gc.collect()
