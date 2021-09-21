@@ -177,7 +177,7 @@ class Config:
 
 
 """
-Builds MFCC feature dataset from acoustic wav signals dataset
+Builds MFCC feature dataset from wav signals dataset
 Args:
 	data_set ('acoustic', 'throat')
 	split ('train', 'test')

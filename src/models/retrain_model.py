@@ -1,6 +1,6 @@
 import os
-import sys
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+import sys
 import pickle
 import numpy as np
 import tensorflow as tf
@@ -27,8 +27,8 @@ def reset_weights(model):
 """
 Retrain model with or without pretrained weights
 Args:
-	model_name (acoustic_mfcc, acoustic_wpd1 etc.)
 	training_mode ('transfer', 'new')
+	model_name (acoustic_mfcc, acoustic_wpd1, ...)
 	data_set ('acoustic', 'throat', 'combined')
 	decomposition_strategy ('raw', 'wpd', 'cwt')
 	decomposition_level (1, 2, 3, 4)
@@ -90,13 +90,13 @@ if __name__ == '__main__':
 		restore_best_weights=False)
 
 	hist = model.fit(
-	X_train,
-	y_train,
-	epochs=100,
-	batch_size=50,
-	shuffle='true',
-	callbacks=[callback],
-	validation_data=(X_val, y_val))
+		X_train,
+		y_train,
+		epochs=100,
+		batch_size=50,
+		shuffle='true',
+		callbacks=[callback],
+		validation_data=(X_val, y_val))
 
 	if STRAT != 'raw':
 		pickle.dump(hist.history, open('models/histories/'+DATASET+'_'+STRAT+LEVEL+'_'+MODE+'.pickle', 'wb'))
