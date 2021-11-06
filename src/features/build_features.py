@@ -33,10 +33,10 @@ def augment_silence(background_noise, config, n):
 	return silence
 
 
-def __noise__(background_noise, idx, sr):
+def __noise__(background_noise, idx, rate):
 	noise = background_noise[idx]
-	start_idx = random.randint(0, len(noise) - sr)
-	return noise[start_idx:(start_idx + sr)]
+	start_idx = random.randint(0, len(noise) - rate)
+	return noise[start_idx:(start_idx + rate)]
 
 
 def grab_files(path, ext='wav'):
@@ -115,18 +115,19 @@ def rescale(signal, rate):
 	return np.interp(np.linspace(0, n, rate), np.arange(n), signal)
 
 
-def resample(signal, sr, n):
+def resample(signal, rate, n):
 	for i in range(n):
-		cut = np.random.randint(0, len(signal) - sr)
-		yield signal[cut: cut + sr]
+		cut = np.random.randint(0, len(signal) - rate)
+		yield signal[cut: cut + rate]
 
 
-def __pad__(signal, sr):
-	if len(signal) >= sr:
+def __pad__(signal, rate):
+	if len(signal) >= rate:
 		return signal
 	else:
-		return np.pad(signal,
-			pad_width=(sr - len(signal), 0),
+		return np.pad(
+			signal,
+			pad_width=(rate - len(signal), 0),
 			mode='constant',
 			constant_values=(0, 0))
 
@@ -144,7 +145,8 @@ numpy ndarray of shape (signal_length/config.winlen, config.numcep)
 	MFCC features
 """
 def __mfcc__(signal, config):
-	return mfcc(signal,
+	return mfcc(
+		signal,
 		samplerate=config.samplerate,
 		winlen=config.winlen,
 		winstep=config.winstep,
