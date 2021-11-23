@@ -74,9 +74,9 @@ if __name__ == '__main__':
 		model = pretrained_model
 
 	model.compile(
-	loss='categorical_crossentropy',
-	optimizer='adam',
-	metrics=['acc'])
+		loss='categorical_crossentropy',
+		optimizer='adam',
+		metrics=['acc'])
 
 	min_delta = (1e-7, 1e-3)[DATASET == 'throat']
 	patience = (7, 3)[DATASET == 'throat']
