@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
 	f1 = plt.figure(figsize=(10, 8))
 	for i in range(n_classes):
-		plt.plot(fpr[i], tpr[i], label=labels[i] + ' vs. rest (score = %0.2f)' % roc_auc[i])
+		plt.plot(fpr[i], tpr[i], label=labels[i] + ' vs. rest (score = %0.3f)' % roc_auc[i])
 		plt.plot([0, 1], [0, 1], 'k--')
 		plt.xlim([0.0, 1.0])
 		plt.ylim([0.0, 1.05])
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 	f2 = plt.figure(figsize=(10, 8))
 	matrix = tf.math.confusion_matrix(y_test.argmax(axis=1), y_pred.argmax(axis=1))
 	matrix = matrix/matrix.numpy().sum(axis=1)[:, tf.newaxis]
-	ax= plt.subplot()
+	ax = plt.subplot()
 	seaborn.heatmap(matrix, annot=True, ax=ax)
 	ax.set_xlabel('Predicted labels')
 	ax.set_ylabel('True labels')
